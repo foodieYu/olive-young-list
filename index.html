@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Olive Young 購物清單</title>
+  <link rel="icon" type="image/png" href="fish_icon.png" />
+  <link rel="apple-touch-icon" href="fish_icon.png" />
+  <style>
+    :root {
+      --bg: #F2EBE0;
+      --card: #FDFAF6;
+      --surface: #F8F3EC;
+      --primary: #B89A78;
+      --primary-dark: #7D5C3C;
+      --primary-light: #D4B896;
+      --accent: #C9A882;
+      --text: #3A2B1E;
+      --text-mid: #7A6355;
+      --text-light: #A8917D;
+      --border: #E5D5C0;
+      --border-light: #EEE4D6;
+      --purchased-bg: #EDE5DA;
+      --purchased-text: #B09A85;
+      --proxy: #9C7A52;
+      --proxy-bg: #F0E6D6;
+      --danger: #C07B6A;
+      --shadow: rgba(100, 70, 40, 0.12);
+      --shadow-md: rgba(100, 70, 40, 0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      background: linear-gradient(160deg, #C4A17E 0%, #8B6440 100%);
+      padding: 20px 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px var(--shadow-md);
+    }
+    .header-row1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-logo {
+      width: 34px;
+      height: 34px;
+      background: rgba(255,255,255,0.22);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+    .header-title {
+      color: white;
+    }
+    .header-title h1 {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      line-height: 1.2;
+    }
+    .header-title p {
+      font-size: 0.68rem;
+      opacity: 0.78;
+      margin-top: 1px;
+    }
+    .header-filter-btn {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      font-size: 0.72rem;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .header-filter-btn.active {
+      background: rgba(255,255,255,0.35);
+    }
+
+    /* progress */
+    .progress-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .progress-bar-wrap {
+      flex: 1;
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      height: 7px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 10px;
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    }
+    .progress-label {
+      color: rgba(255,255,255,0.9);
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* ─── FILTER TABS ─── */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      padding: 10px 16px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border-light);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .ftab {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.73rem;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-light);
+      white-space: nowrap;
+      font-family: inherit;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .ftab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    /* ─── CONTENT ─── */
+    .content {
+      padding: 14px 14px 110px;
+    }
+
+    /* ─── CATEGORY ─── */
+    .category { margin-bottom: 18px; }
+
+    .cat-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      background: linear-gradient(90deg, #E8D9C5, #EDE4D5);
+      border-radius: 14px 14px 0 0;
+      cursor: pointer;
+      user-select: none;
+      border: 1px solid var(--border);
+      border-bottom: none;
+    }
+    .cat-icon { font-size: 1rem; }
+    .cat-name {
+      font-size: 0.83rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      flex: 1;
+      letter-spacing: 0.2px;
+    }
+    .cat-stat {
+      font-size: 0.7rem;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+    .cat-chevron {
+      color: var(--primary);
+      font-size: 0.65rem;
+      transition: transform 0.3s;
+      flex-shrink: 0;
+    }
+    .cat-chevron.closed { transform: rotate(-90deg); }
+
+    .cat-body {
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    .cat-body.hidden { display: none; }
+
+    /* ─── ITEM ─── */
+    .item {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--border-light);
+      transition: background 0.2s;
+      display: none;
+    }
+    .item.show { display: block; }
+    .item:last-child { border-bottom: none; }
+    .item.done { background: var(--purchased-bg); }
+
+    .item-row1 {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    /* thumbnail */
+    .item-thumb {
+      flex-shrink: 0;
+      width: 58px;
+      height: 58px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+    .item-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .item-thumb .thumb-emoji {
+      font-size: 1.5rem;
+    }
+    .item.done .item-thumb {
+      opacity: 0.55;
+      filter: grayscale(30%);
+    }
+
+    /* checkbox */
+    .cb {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--primary-light);
+      border-radius: 7px;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      transition: all 0.2s;
+    }
+    .cb.checked {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .cb.checked::after {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 10px;
+      border: 2.5px solid white;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translate(-1px, -1px);
+    }
+
+    .item-meta { flex: 1; min-width: 0; }
+
+    .item-name {
+      font-size: 0.87rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .item.done .item-name {
+      color: var(--purchased-text);
+      text-decoration: line-through;
+      text-decoration-color: var(--primary-light);
+    }
+
+    .item-tip {
+      font-size: 0.7rem;
+      color: var(--text-light);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .badges {
+      display: flex;
+      gap: 5px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 0.62rem;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .badge-proxy {
+      background: var(--proxy-bg);
+      color: var(--proxy);
+      border: 1px solid #D9C0A4;
+    }
+
+    .item-row2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      justify-content: space-between;
+    }
+
+    /* qty */
+    .qty-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 5px 12px;
+      border: 1px solid var(--border-light);
+    }
+    .qty-btn {
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      padding: 0;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+    .qty-btn:active { transform: scale(0.85); }
+    .qty-val {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      min-width: 22px;
+      text-align: center;
+    }
+    .qty-unit {
+      font-size: 0.68rem;
+      color: var(--text-light);
+    }
+
+    .item-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .action-btn {
+      font-size: 0.7rem;
+      padding: 5px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text-mid);
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .action-btn:active { background: var(--surface); }
+    .del-btn {
+      border-color: transparent;
+      background: none;
+      color: var(--danger);
+      opacity: 0.5;
+      padding: 5px 6px;
+    }
+    .del-btn:active { opacity: 1; background: none; }
+
+    /* note */
+    .note-wrap { margin-top: 8px; display: none; }
+    .note-wrap.open { display: block; }
+    .note-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-family: inherit;
+      background: white;
+      color: var(--text);
+      resize: none;
+      min-height: 68px;
+      outline: none;
+      line-height: 1.5;
+    }
+    .note-input:focus { border-color: var(--primary); }
+
+    .note-display {
+      font-size: 0.73rem;
+      color: var(--text-mid);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-top: 6px;
+      line-height: 1.5;
+      border-left: 3px solid var(--primary-light);
+      display: none;
+    }
+    .note-display.visible { display: block; }
+
+    /* ─── FAB ─── */
+    .fab {
+      position: fixed;
+      bottom: 26px;
+      right: 20px;
+      width: 58px;
+      height: 58px;
+      background: linear-gradient(135deg, #C4A17E, #7D5C3C);
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 1.6rem;
+      cursor: pointer;
+      box-shadow: 0 6px 24px var(--shadow-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .fab:active { transform: scale(0.9); box-shadow: 0 2px 10px var(--shadow); }
+
+    /* ─── MODAL ─── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(50, 34, 20, 0.48);
+      z-index: 400;
+      display: none;
+      align-items: flex-end;
+      backdrop-filter: blur(2px);
+    }
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      border-radius: 22px 22px 0 0;
+      padding: 0 0 40px;
+      animation: slideUp 0.3s cubic-bezier(.4,0,.2,1);
+      max-height: 88vh;
+      overflow-y: auto;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);   opacity: 1; }
+    }
+    .modal-handle-wrap {
+      text-align: center;
+      padding: 12px 0 0;
+    }
+    .modal-handle {
+      display: inline-block;
+      width: 42px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+    }
+    .modal-header {
+      padding: 14px 20px 18px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .modal-header h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+    .modal-body { padding: 20px 20px 0; }
+
+    .fg { margin-bottom: 14px; }
+    .fg label {
+      display: block;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--text-light);
+      margin-bottom: 6px;
+      letter-spacing: 0.3px;
+    }
+    .fg input, .fg select, .fg textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      background: white;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--primary); }
+    .fg textarea { resize: none; min-height: 70px; line-height: 1.5; }
+
+    .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      background: white;
+      cursor: pointer;
+    }
+    .toggle-row span { font-size: 0.85rem; color: var(--text); font-weight: 600; }
+    .toggler {
+      width: 44px;
+      height: 24px;
+      background: var(--border);
+      border-radius: 12px;
+      position: relative;
+      transition: background 0.25s;
+    }
+    .toggler.on { background: var(--primary); }
+    .toggler::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.25s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    .toggler.on::after { left: 22px; }
+
+    .modal-actions {
+      padding: 16px 20px 0;
+      display: flex;
+      gap: 10px;
+    }
+    .btn-cancel {
+      flex: 1;
+      padding: 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      color: var(--text-mid);
+      font-size: 0.88rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .btn-save {
+      flex: 2;
+      padding: 13px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #C4A17E, #7D5C3C);
+      color: white;
+      font-size: 0.88rem;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+    }
+    .btn-save:active { opacity: 0.85; }
+
+    /* upload button */
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 7px 14px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .upload-btn:active { background: var(--border); }
+
+    /* ─── EMPTY ─── */
+    .empty {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--text-light);
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty p { font-size: 0.85rem; }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--primary-dark);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 500;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-row1">
+    <div class="header-brand">
+      <div class="header-logo"><img src="fish_icon.png" alt="icon" style="width:24px;height:24px;object-fit:contain;" /></div>
+      <div class="header-title">
+        <h1>Olive Young 購物清單</h1>
+        <p>올리브영 쇼핑 리스트</p>
+      </div>
+    </div>
+    <button class="header-filter-btn" id="showOnlyProxyBtn" onclick="toggleProxyFilter()">代購商品</button>
+  </div>
+  <div class="progress-section">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 / 0</div>
+  </div>
+</header>
+
+<!-- FILTER TABS -->
+<div class="filter-bar">
+  <button class="ftab active" data-filter="all" onclick="setFilter('all',this)">全部</button>
+  <button class="ftab" data-filter="pending" onclick="setFilter('pending',this)">⏳ 待購</button>
+  <button class="ftab" data-filter="done" onclick="setFilter('done',this)">✅ 已購</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content" id="content"></div>
+
+<!-- FAB -->
+<button class="fab" onclick="openModal()" title="新增商品">＋</button>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle-wrap"><span class="modal-handle"></span></div>
+    <div class="modal-header">
+      <h2 id="modalTitle">✨ 新增商品</h2>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <label>商品名稱 *</label>
+        <input type="text" id="mName" placeholder="e.g. MEDIHEAL 面膜" />
+      </div>
+      <div class="fg">
+        <label>用途 / 小提醒</label>
+        <textarea id="mTip" placeholder="e.g. 遇到打折時囤貨"></textarea>
+      </div>
+      <div class="fg-row">
+        <div class="fg">
+          <label>分類</label>
+          <select id="mCat">
+            <option value="skincare">🧴 保養</option>
+            <option value="makeup">💄 彩妝</option>
+            <option value="cleansing">🧼 洗卸</option>
+            <option value="body">🧴 身體髮品</option>
+            <option value="snacks">🍪 零食飲品</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>數量</label>
+          <input type="number" id="mQty" value="1" min="1" />
+        </div>
+      </div>
+      <div class="fg">
+        <label>備注</label>
+        <input type="text" id="mNote" placeholder="e.g. 姊姊代購一盒" />
+      </div>
+      <div class="fg">
+        <label>商品圖片 *</label>
+        <input type="url" id="mImg" placeholder="貼上圖片網址 https://…" />
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+          <label class="upload-btn" for="mImgFile">📷 從相簿上傳</label>
+          <input type="file" id="mImgFile" accept="image/*" style="display:none" />
+          <span id="mImgFileName" style="font-size:0.72rem;color:var(--text-light);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+        </div>
+        <div id="mImgPreview" style="margin-top:8px;display:none;">
+          <img id="mImgPreviewImg" src="" alt="預覽" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1.5px solid var(--primary-light);" onerror="document.getElementById('mImgPreview').style.display='none'" />
+        </div>
+      </div>
+      <div class="fg">
+        <div class="toggle-row" onclick="toggleProxy()">
+          <span>🎁 代購商品</span>
+          <div class="toggler" id="proxyToggler"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-save" onclick="saveItem()">加入清單</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const CATEGORIES = [
+  { id:'skincare',  icon:'🧴', name:'保養與敷臉', sub:'Skincare & Face Masks' },
+  { id:'makeup',   icon:'💄', name:'彩妝與刷具', sub:'Makeup & Beauty Tools' },
+  { id:'cleansing',icon:'🧼', name:'洗卸與防曬', sub:'Cleansing & Sun Care' },
+  { id:'body',     icon:'🌿', name:'身體與髮品', sub:'Body & Hair Care' },
+  { id:'snacks',   icon:'🍪', name:'零食與飲品', sub:'Snacks & Drinks' },
+];
+
+const DEFAULT_ITEMS = [
+  // 保養
+  { id:'s1', cat:'skincare', name:'MEDIHEAL 面膜', tip:'妝前敷一片幫肌膚降溫，讓底妝更服貼。打折時建議買大容量囤貨 📦', qty:1, done:false, proxy:false, note:'', img:'https://cdn-image.oliveyoung.com/prdtImg/1271/60288a39-e776-4fcf-b720-cbccdd90fce0.jpg' },
+  { id:'s2', cat:'skincare', name:'3小時膠原蛋白變色面膜（粉色款）', tip:'睡前敷，3小時後白色→透明，保水效果極佳 💤', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'s3', cat:'skincare', name:'Numbuzin 9號 NAD+ 50胜肽全效面膜（紫色款）', tip:'敷完提拉效果超有感，像打過電波一樣驚豔 ✨', qty:1, done:false, proxy:false, note:'', img:'https://cdn-image.oliveyoung.com/prdtImg/1883/47500dd8-1997-43c2-80e6-3cb00fad7832.jpg' },
+  { id:'s4', cat:'skincare', name:'BOH Probioderm 膠原蛋白緊緻精華', tip:'擦完膚觸超柔嫩，皮膚質感升一階 🌸', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'s5', cat:'skincare', name:'妝前冰鎮保濕棉片', tip:'早上專用，敷上超涼爽，有效幫助妝容服貼 ❄️', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'s6', cat:'skincare', name:'維他命C亮白乳液', tip:'夏天穿短袖短褲前必備，塗手肘膝蓋等暗沉關節，提亮色差效果明顯 ☀️', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'s7', cat:'skincare', name:'ilso 粉刺導出液', tip:'濕敷15分鐘粉刺自動浮出，搭配刮棒輕鬆清除鼻頭粉刺 🔍', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'s8', cat:'skincare', name:'Bring Green 竹子玻尿酸保濕護唇精華', tip:'晚上厚厚塗一層，隔天洗掉死皮，保濕力比許多大牌還強 💋', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'s9', cat:'skincare', name:'Melixir 全素潤唇膏', tip:'推薦色號：02 Nude Crumble 裸色碎餅。含龍舌蘭萃取，自然潤色全素成分 🌿', qty:1, done:false, proxy:false, note:'色號 02 Nude Crumble', img:null },
+  // 彩妝
+  { id:'m1', cat:'makeup', name:'妝前保濕精華（黏稠清爽型）', tip:'質地濃郁但推開很清爽，適合台灣潮濕氣候，讓底妝完美服貼 💧', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'m2', cat:'makeup', name:'The Saem 三色遮瑕膏', tip:'韓國首選！綠色校正泛紅、粉色提亮黑眼圈、遮瑕適合亞洲膚色，一盤搞定全臉 🎨', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'m3', cat:'makeup', name:'氣墊粉餅替換粉撲', tip:'台灣潮濕易滋菌，建議趁便宜囤貨，定期更換省去看皮膚科的麻煩 🛡️', qty:3, done:false, proxy:false, note:'', img:null },
+  { id:'m4', cat:'makeup', name:'Too Cool For School 臥蠶筆', tip:'畫上眼睛瞬間變有神，兼做局部打亮。⚠️ 記得加購「專屬削筆刀」！', qty:1, done:false, proxy:false, note:'⚠️ 記得買配套削筆刀', img:null },
+  { id:'m5', cat:'makeup', name:'rom&nd 柔霧多用盤', tip:'一盤搞定眼影、臥蠶、眼線。柔霧奶油膏質地，上妝滑順好暈染 🎭', qty:1, done:false, proxy:false, note:'', img:'https://cdn-image.oliveyoung.com/prdtImg/1058/ebfd2f2b-b181-435b-a0a8-ce6458aa111b.jpg' },
+  { id:'m6', cat:'makeup', name:'膏狀腮紅（偏紅色系）', tip:'奶油霜質地與底妝完美融合不顯粉，一擦就有蘋果般的自然好氣色 🍎', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'m7', cat:'makeup', name:'定妝蜜粉 / 果凍定妝粉', tip:'透明款可提亮；果凍款8色可選兼具柔焦，完美吸附夏天油脂 🌟', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'m8', cat:'makeup', name:'So.Natural All Day Tight 定妝噴霧', tip:'韓國超熱賣！噴霧細緻且好聞，有效防止夏天出油溶妝 💨', qty:1, done:false, proxy:false, note:'', img:null },
+  { id:'m9', cat:'makeup', name:'Peripera Mood Glowy Tint 水光唇釉', tip:'韓國十幾年霸主！水光質地讓嘴唇更年輕有活力。15號特別適合白皙膚色 💄', qty:1, done:false, proxy:false, note:'推薦色號：15、16 Rose', img:'https://cdn-image.oliveyoung.com/prdtImg/1906/ca69779e-539b-4ea9-8105-9cb5de677c00.jpg' },
+  // 洗卸
+  { id:'c1', cat:'cleansing', name:'Banila Co Zero 零感肌瞬卸凝霜（旅行組）', tip:'暢銷10年神級卸妝膏！旅行組超方便好攜帶，還能分送朋友 ✈️', qty:2, done:false, proxy:false, note:'', img:'https://cdn-image.oliveyoung.com/prdtImg/1603/9902e52a-08ab-4216-8de1-721417b5aac5.jpg' },
+  // 身體髮品
+  { id:'b1', cat:'body', name:'Lador Angel Muguet 鈴蘭香水護髮油', tip:'經常缺貨的熱門品！質地輕盈好吸收，頭髮超滑順且有高級清香 🌸', qty:1, done:false, proxy:false, note:'⚠️ 常缺貨，看到要快手', img:null },
+  { id:'b2', cat:'body', name:'Longtake Sandalwood 木質調護髮油', tip:'木質調香味舒服，且具備真正有效的護髮修護作用 🌲', qty:1, done:false, proxy:false, note:'', img:null },
+  // 零食
+  { id:'f1', cat:'snacks', name:'TEAZEN 康普茶 — 柚子口味', tip:'無人工香料，含益生菌，泡冰塊喝有微碳酸感，健康解暑飲品 🍵', qty:2, done:false, proxy:true, note:'姊姊代購一盒，自己買一盒', img:null },
+  { id:'f2', cat:'snacks', name:'TEAZEN 康普茶 — 鳳梨口味', tip:'無人工香料，含益生菌，取代咖啡的健康解暑飲品 🍍', qty:2, done:false, proxy:true, note:'姊姊代購一盒，自己買一盒', img:null },
+  { id:'f3', cat:'snacks', name:'TEAZEN 康普茶 — 皮卡丘檸檬（寶可夢包裝）', tip:'可愛寶可夢限定包裝！檸檬口味清爽好喝 ⚡', qty:2, done:false, proxy:true, note:'姊姊代購一盒，自己買一盒', img:'https://cdn-image.oliveyoung.com/prdtImg/1520/0b57ef4d-7eba-4e31-b4b1-00dffae36464.jpg' },
+  { id:'f4', cat:'snacks', name:'TEAZEN 康普茶 — 傑尼龜麝香葡萄（寶可夢包裝）', tip:'可愛寶可夢限定包裝！麝香葡萄風味 💙', qty:2, done:false, proxy:true, note:'姊姊代購一盒，自己買一盒', img:null },
+  { id:'f5', cat:'snacks', name:'大蒜 / 披薩口味健康餅乾', tip:'外國旅客瘋狂囤貨的爆款！健康概念又好吃 🧄', qty:2, done:false, proxy:false, note:'', img:null },
+  { id:'f6', cat:'snacks', name:'O!GAM 沾醬薯條餅乾（奶油大蒜醬）', tip:'附贈極致美味的沾醬，一沾停不下來！超級推薦 🥔', qty:2, done:false, proxy:false, note:'', img:null },
+  { id:'f7', cat:'snacks', name:'Delight Project 草莓優格凍乾', tip:'草莓配優格超好吃，一包僅40大卡！趕飛機解嘴饞神器 🍓', qty:5, done:false, proxy:false, note:'', img:null },
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let items = [];
+let catOpen = {};
+let filter = 'all';
+let proxyOnly = false;
+let editingId = null;
+let proxyOn = false;
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('oy_items');
+    items = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+    const co = localStorage.getItem('oy_catOpen');
+    catOpen = co ? JSON.parse(co) : {};
+    CATEGORIES.forEach(c => { if (catOpen[c.id] === undefined) catOpen[c.id] = true; });
+  } catch(e) {
+    items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+    CATEGORIES.forEach(c => { catOpen[c.id] = true; });
+  }
+}
+
+function saveState() {
+  localStorage.setItem('oy_items', JSON.stringify(items));
+  localStorage.setItem('oy_catOpen', JSON.stringify(catOpen));
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────────────────
+function render() {
+  updateProgress();
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  CATEGORIES.forEach(cat => {
+    let catItems = items.filter(i => i.cat === cat.id);
+
+    // apply filters
+    let visible = catItems.filter(i => {
+      if (proxyOnly && !i.proxy) return false;
+      if (filter === 'pending' && i.done) return false;
+      if (filter === 'done' && !i.done) return false;
+      return true;
+    });
+
+    if (visible.length === 0 && (filter !== 'all' || proxyOnly)) return;
+
+    const done = catItems.filter(i => i.done).length;
+    const total = catItems.length;
+    const isOpen = catOpen[cat.id] !== false;
+
+    const catEl = document.createElement('div');
+    catEl.className = 'category';
+    catEl.id = 'cat-' + cat.id;
+
+    catEl.innerHTML = `
+      <div class="cat-header" onclick="toggleCat('${cat.id}')">
+        <span class="cat-icon">${cat.icon}</span>
+        <span class="cat-name">${cat.name} <span style="font-weight:400;font-size:0.72rem;color:var(--text-light)">${cat.sub}</span></span>
+        <span class="cat-stat">${done}/${total}</span>
+        <span class="cat-chevron ${isOpen ? '' : 'closed'}">▼</span>
+      </div>
+      <div class="cat-body ${isOpen ? '' : 'hidden'}" id="body-${cat.id}">
+        ${visible.map(item => buildItem(item)).join('')}
+        ${visible.length === 0 ? '<div class="empty"><p>此分類無商品</p></div>' : ''}
+      </div>
+    `;
+    content.appendChild(catEl);
+  });
+}
+
+const CAT_EMOJI = { skincare:'🧴', makeup:'💄', cleansing:'🧼', body:'🌿', snacks:'🍪' };
+
+function buildItem(item) {
+  const noteDisplay = item.note
+    ? `<div class="note-display visible" id="nd-${item.id}">📝 ${escHtml(item.note)}</div>`
+    : `<div class="note-display" id="nd-${item.id}"></div>`;
+
+  const thumbHtml = item.img
+    ? `<div class="item-thumb"><img src="${escHtml(item.img)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<span class=\\'thumb-emoji\\'>${CAT_EMOJI[item.cat]||'🛍'}</span>'"></div>`
+    : `<div class="item-thumb"><span class="thumb-emoji">${CAT_EMOJI[item.cat]||'🛍'}</span></div>`;
+
+  return `
+    <div class="item ${item.done ? 'done' : ''} show" id="item-${item.id}">
+      <div class="item-row1">
+        <div class="cb ${item.done ? 'checked' : ''}" onclick="toggleDone('${item.id}')"></div>
+        ${thumbHtml}
+        <div class="item-meta">
+          <div class="item-name">${escHtml(item.name)}</div>
+          ${item.tip ? `<div class="item-tip">${escHtml(item.tip)}</div>` : ''}
+          <div class="badges">
+            ${item.proxy ? '<span class="badge badge-proxy">🎁 代購</span>' : ''}
+          </div>
+        </div>
+      </div>
+      <div class="item-row2">
+        <div class="qty-box">
+          <button class="qty-btn" onclick="changeQty('${item.id}',-1)">−</button>
+          <span class="qty-val" id="qty-${item.id}">${item.qty}</span>
+          <span class="qty-unit">個</span>
+          <button class="qty-btn" onclick="changeQty('${item.id}',1)">＋</button>
+        </div>
+        <div class="item-actions">
+          <button class="action-btn" onclick="toggleNote('${item.id}')">📝 備注</button>
+          <button class="action-btn" onclick="editItem('${item.id}')">✏️</button>
+          <button class="action-btn del-btn" onclick="deleteItem('${item.id}')">🗑</button>
+        </div>
+      </div>
+      ${noteDisplay}
+      <div class="note-wrap" id="nw-${item.id}">
+        <textarea class="note-input" id="ni-${item.id}" placeholder="新增備注…" onblur="saveNote('${item.id}')">${escHtml(item.note)}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── ACTIONS ────────────────────────────────────────────────────────────────
+function toggleDone(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  item.done = !item.done;
+  saveState();
+  render();
+  showToast(item.done ? '✅ 已加入購物車！' : '↩️ 已取消購買');
+}
+
+function changeQty(id, delta) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  item.qty = Math.max(1, item.qty + delta);
+  document.getElementById('qty-' + id).textContent = item.qty;
+  saveState();
+}
+
+function toggleNote(id) {
+  const nw = document.getElementById('nw-' + id);
+  const nd = document.getElementById('nd-' + id);
+  if (!nw) return;
+  const isOpen = nw.classList.contains('open');
+  nw.classList.toggle('open');
+  if (!isOpen) {
+    const ni = document.getElementById('ni-' + id);
+    if (ni) ni.focus();
+    if (nd) nd.style.display = 'none';
+  } else {
+    const item = items.find(i => i.id === id);
+    if (nd && item && item.note) nd.classList.add('visible');
+    if (nd) nd.style.display = '';
+  }
+}
+
+function saveNote(id) {
+  const ni = document.getElementById('ni-' + id);
+  if (!ni) return;
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  item.note = ni.value.trim();
+  const nd = document.getElementById('nd-' + id);
+  if (nd) {
+    nd.textContent = item.note ? '📝 ' + item.note : '';
+    nd.classList.toggle('visible', !!item.note);
+  }
+  saveState();
+}
+
+function deleteItem(id) {
+  if (!confirm('確定要刪除這個商品嗎？')) return;
+  items = items.filter(i => i.id !== id);
+  saveState();
+  render();
+  showToast('🗑 已刪除商品');
+}
+
+function editItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('mName').value = item.name;
+  document.getElementById('mTip').value = item.tip || '';
+  document.getElementById('mCat').value = item.cat;
+  document.getElementById('mQty').value = item.qty;
+  document.getElementById('mNote').value = item.note || '';
+  document.getElementById('mImg').value = item.img || '';
+  document.getElementById('mImgFile').value = '';
+  document.getElementById('mImgFileName').textContent = '';
+  const pi = document.getElementById('mImgPreviewImg');
+  if (pi) pi.dataset.base64 = '';
+  setImgPreview(item.img || '');
+  proxyOn = item.proxy;
+  document.getElementById('proxyToggler').classList.toggle('on', proxyOn);
+  document.getElementById('modalTitle').textContent = '✏️ 編輯商品';
+  openModal();
+}
+
+function toggleCat(id) {
+  catOpen[id] = !catOpen[id];
+  saveState();
+  const body = document.getElementById('body-' + id);
+  const chevron = document.querySelector('#cat-' + id + ' .cat-chevron');
+  if (body) body.classList.toggle('hidden', !catOpen[id]);
+  if (chevron) chevron.classList.toggle('closed', !catOpen[id]);
+}
+
+// ─── FILTER ─────────────────────────────────────────────────────────────────
+function setFilter(f, el) {
+  filter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function toggleProxyFilter() {
+  proxyOnly = !proxyOnly;
+  document.getElementById('showOnlyProxyBtn').classList.toggle('active', proxyOnly);
+  render();
+}
+
+// ─── PROGRESS ───────────────────────────────────────────────────────────────
+function updateProgress() {
+  const total = items.length;
+  const done = items.filter(i => i.done).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = done + ' / ' + total;
+}
+
+// ─── MODAL ──────────────────────────────────────────────────────────────────
+function setImgPreview(url) {
+  const wrap = document.getElementById('mImgPreview');
+  const img = document.getElementById('mImgPreviewImg');
+  if (url && url.startsWith('http')) {
+    img.src = url;
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+    img.src = '';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('mImg').addEventListener('input', function() {
+    const url = this.value.trim();
+    // clear file upload when URL is typed
+    document.getElementById('mImgFile').value = '';
+    document.getElementById('mImgFileName').textContent = '';
+    setImgPreview(url);
+  });
+
+  document.getElementById('mImgFile').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    document.getElementById('mImgFileName').textContent = file.name;
+    // clear URL field when file is chosen
+    document.getElementById('mImg').value = '';
+    const reader = new FileReader();
+    reader.onload = e => {
+      setImgPreview(e.target.result);
+      // store base64 in a temp variable so saveItem can read it
+      document.getElementById('mImgPreviewImg').dataset.base64 = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+function openModal() {
+  if (!editingId) {
+    document.getElementById('mName').value = '';
+    document.getElementById('mTip').value = '';
+    document.getElementById('mCat').value = 'skincare';
+    document.getElementById('mQty').value = 1;
+    document.getElementById('mNote').value = '';
+    document.getElementById('mImg').value = '';
+    document.getElementById('mImgFile').value = '';
+    document.getElementById('mImgFileName').textContent = '';
+    const pi = document.getElementById('mImgPreviewImg');
+    if (pi) pi.dataset.base64 = '';
+    setImgPreview('');
+    proxyOn = false;
+    document.getElementById('proxyToggler').classList.remove('on');
+    document.getElementById('modalTitle').textContent = '✨ 新增商品';
+  }
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('mName').focus(), 350);
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  editingId = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+function toggleProxy() {
+  proxyOn = !proxyOn;
+  document.getElementById('proxyToggler').classList.toggle('on', proxyOn);
+}
+
+function getImgValue() {
+  // prefer URL field; fall back to uploaded base64
+  const url = document.getElementById('mImg').value.trim();
+  if (url) return url;
+  const pi = document.getElementById('mImgPreviewImg');
+  return (pi && pi.dataset.base64) ? pi.dataset.base64 : null;
+}
+
+function saveItem() {
+  const name = document.getElementById('mName').value.trim();
+  if (!name) { showToast('⚠️ 請輸入商品名稱'); return; }
+  const imgVal = getImgValue();
+  if (!imgVal) { showToast('⚠️ 請提供商品圖片或網址'); return; }
+  const qty = Math.max(1, parseInt(document.getElementById('mQty').value) || 1);
+
+  if (editingId) {
+    const item = items.find(i => i.id === editingId);
+    if (item) {
+      item.name = name;
+      item.tip = document.getElementById('mTip').value.trim();
+      item.cat = document.getElementById('mCat').value;
+      item.qty = qty;
+      item.note = document.getElementById('mNote').value.trim();
+      item.proxy = proxyOn;
+      item.img = getImgValue();
+    }
+    showToast('✅ 已更新商品');
+  } else {
+    items.push({
+      id: 'u' + Date.now(),
+      cat: document.getElementById('mCat').value,
+      name,
+      tip: document.getElementById('mTip').value.trim(),
+      qty,
+      done: false,
+      proxy: proxyOn,
+      note: document.getElementById('mNote').value.trim(),
+      img: getImgValue(),
+    });
+    showToast('✅ 已加入清單！');
+  }
+
+  saveState();
+  closeModal();
+  render();
+}
+
+// ─── TOAST ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+loadState();
+render();
+</script>
+</body>
+</html>
