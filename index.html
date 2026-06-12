@@ -747,6 +747,77 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── FIREBASE ───────────────────────────────────────────────────────────────
+const DB_URL = 'https://olive-young-list-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+async function loadFromFirebase() {
+  try {
+    const res = await fetch(DB_URL + '/items.json');
+    const data = await res.json();
+    if (data && typeof data === 'object') {
+      items = Object.values(data).filter(Boolean);
+    } else {
+      items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+      await pushAllToFirebase();
+    }
+  } catch(e) {
+    items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+  }
+}
+
+async function pushAllToFirebase() {
+  const obj = {};
+  items.forEach(i => { obj[i.id] = i; });
+  return fetch(DB_URL + '/items.json', {
+    method: 'PUT',
+    body: JSON.stringify(obj),
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+function fbSave(item) {
+  fetch(DB_URL + '/items/' + item.id + '.json', {
+    method: 'PUT',
+    body: JSON.stringify(item),
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+function fbDelete(id) {
+  fetch(DB_URL + '/items/' + id + '.json', { method: 'DELETE' });
+}
+
+let isListening = false;
+function listenFirebase() {
+  if (isListening) return;
+  isListening = true;
+  const es = new EventSource(DB_URL + '/items.json?accept=text/event-stream');
+  es.addEventListener('put', function(e) {
+    try {
+      const msg = JSON.parse(e.data);
+      const path = msg.path, data = msg.data;
+      if (path === '/') {
+        items = data ? Object.values(data).filter(Boolean) : [];
+      } else {
+        const id = path.slice(1);
+        if (data === null) {
+          items = items.filter(i => i.id !== id);
+        } else {
+          const idx = items.findIndex(i => i.id === id);
+          if (idx >= 0) items[idx] = data;
+          else items.push(data);
+        }
+      }
+      render();
+    } catch(err) {}
+  });
+  es.onerror = function() {
+    isListening = false;
+    es.close();
+    setTimeout(listenFirebase, 3000);
+  };
+}
+
 // ─── DATA ───────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
@@ -801,21 +872,7 @@ let proxyOnly = false;
 let editingId = null;
 let proxyOn = false;
 
-function loadState() {
-  try {
-    const saved = localStorage.getItem('oy_items');
-    items = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_ITEMS));
-    const co = localStorage.getItem('oy_catOpen');
-    catOpen = co ? JSON.parse(co) : {};
-    CATEGORIES.forEach(c => { if (catOpen[c.id] === undefined) catOpen[c.id] = true; });
-  } catch(e) {
-    items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
-    CATEGORIES.forEach(c => { catOpen[c.id] = true; });
-  }
-}
-
-function saveState() {
-  localStorage.setItem('oy_items', JSON.stringify(items));
+function saveCatOpen() {
   localStorage.setItem('oy_catOpen', JSON.stringify(catOpen));
 }
 
@@ -916,8 +973,8 @@ function toggleDone(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   item.done = !item.done;
-  saveState();
   render();
+  fbSave(item);
   showToast(item.done ? '✅ 已加入購物車！' : '↩️ 已取消購買');
 }
 
@@ -926,7 +983,7 @@ function changeQty(id, delta) {
   if (!item) return;
   item.qty = Math.max(1, item.qty + delta);
   document.getElementById('qty-' + id).textContent = item.qty;
-  saveState();
+  fbSave(item);
 }
 
 function toggleNote(id) {
@@ -957,13 +1014,13 @@ function saveNote(id) {
     nd.textContent = item.note ? '📝 ' + item.note : '';
     nd.classList.toggle('visible', !!item.note);
   }
-  saveState();
+  fbSave(item);
 }
 
 function deleteItem(id) {
   if (!confirm('確定要刪除這個商品嗎？')) return;
   items = items.filter(i => i.id !== id);
-  saveState();
+  fbDelete(id);
   render();
   showToast('🗑 已刪除商品');
 }
@@ -991,7 +1048,7 @@ function editItem(id) {
 
 function toggleCat(id) {
   catOpen[id] = !catOpen[id];
-  saveState();
+  saveCatOpen();
   const body = document.getElementById('body-' + id);
   const chevron = document.querySelector('#cat-' + id + ' .cat-chevron');
   if (body) body.classList.toggle('hidden', !catOpen[id]);
@@ -1121,8 +1178,9 @@ function saveItem() {
       item.img = getImgValue();
     }
     showToast('✅ 已更新商品');
+    fbSave(item);
   } else {
-    items.push({
+    const newItem = {
       id: 'u' + Date.now(),
       cat: document.getElementById('mCat').value,
       name,
@@ -1132,11 +1190,12 @@ function saveItem() {
       proxy: proxyOn,
       note: document.getElementById('mNote').value.trim(),
       img: getImgValue(),
-    });
+    };
+    items.push(newItem);
+    fbSave(newItem);
     showToast('✅ 已加入清單！');
   }
 
-  saveState();
   closeModal();
   render();
 }
@@ -1152,8 +1211,20 @@ function showToast(msg) {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
-loadState();
-render();
+async function init() {
+  const co = localStorage.getItem('oy_catOpen');
+  catOpen = co ? JSON.parse(co) : {};
+  CATEGORIES.forEach(c => { if (catOpen[c.id] === undefined) catOpen[c.id] = true; });
+
+  document.getElementById('content').innerHTML =
+    '<div class="empty"><div class="empty-icon">⏳</div><p>載入中…</p></div>';
+
+  await loadFromFirebase();
+  render();
+  listenFirebase();
+}
+
+init();
 </script>
 </body>
 </html>
