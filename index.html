@@ -747,25 +747,23 @@
 <div class="toast" id="toast"></div>
 
 <script>
+'use strict';
 // ─── FIREBASE ───────────────────────────────────────────────────────────────
 const DB_URL = 'https://olive-young-list-default-rtdb.asia-southeast1.firebasedatabase.app';
+let _sse = null;
 
-async function loadFromFirebase() {
-  try {
-    const res = await fetch(DB_URL + '/items.json');
-    const data = await res.json();
-    if (data && typeof data === 'object') {
-      items = Object.values(data).filter(Boolean);
-    } else {
-      items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
-      await pushAllToFirebase();
-    }
-  } catch(e) {
+async function fbLoad() {
+  const res = await fetch(DB_URL + '/items.json');
+  const data = await res.json();
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    items = Object.values(data).filter(Boolean);
+  } else {
     items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+    await fbPutAll();
   }
 }
 
-async function pushAllToFirebase() {
+async function fbPutAll() {
   const obj = {};
   items.forEach(i => { obj[i.id] = i; });
   return fetch(DB_URL + '/items.json', {
@@ -775,7 +773,7 @@ async function pushAllToFirebase() {
   });
 }
 
-function fbSave(item) {
+function fbPut(item) {
   fetch(DB_URL + '/items/' + item.id + '.json', {
     method: 'PUT',
     body: JSON.stringify(item),
@@ -783,40 +781,51 @@ function fbSave(item) {
   });
 }
 
-function fbDelete(id) {
+function fbRemove(id) {
   fetch(DB_URL + '/items/' + id + '.json', { method: 'DELETE' });
 }
 
-let isListening = false;
-function listenFirebase() {
-  if (isListening) return;
-  isListening = true;
+function applyFbData(path, data) {
+  if (path === '/') {
+    items = data ? Object.values(data).filter(Boolean) : [];
+  } else {
+    const id = path.replace(/^\//, '');
+    if (data === null) {
+      items = items.filter(i => i.id !== id);
+    } else {
+      const idx = items.findIndex(i => i.id === id);
+      if (idx >= 0) items[idx] = data;
+      else items.push(data);
+    }
+  }
+}
+
+function fbListen() {
+  if (_sse) { _sse.close(); _sse = null; }
   const es = new EventSource(DB_URL + '/items.json?accept=text/event-stream');
+  _sse = es;
   es.addEventListener('put', function(e) {
+    try { const m = JSON.parse(e.data); applyFbData(m.path, m.data); render(); } catch(err) {}
+  });
+  es.addEventListener('patch', function(e) {
     try {
-      const msg = JSON.parse(e.data);
-      const path = msg.path, data = msg.data;
-      if (path === '/') {
-        items = data ? Object.values(data).filter(Boolean) : [];
-      } else {
-        const id = path.slice(1);
-        if (data === null) {
-          items = items.filter(i => i.id !== id);
-        } else {
-          const idx = items.findIndex(i => i.id === id);
-          if (idx >= 0) items[idx] = data;
-          else items.push(data);
-        }
+      const m = JSON.parse(e.data);
+      if (m.data && typeof m.data === 'object') {
+        Object.entries(m.data).forEach(([id, val]) => applyFbData('/' + id, val));
+        render();
       }
-      render();
     } catch(err) {}
   });
-  es.onerror = function() {
-    isListening = false;
-    es.close();
-    setTimeout(listenFirebase, 3000);
-  };
+  es.onerror = function() { _sse = null; es.close(); setTimeout(fbListen, 5000); };
 }
+
+// ─── COMPAT: old names still used below ──────────────────────────────────────
+const loadFromFirebase = fbLoad;
+const listenFirebase = fbListen;
+const fbSave = fbPut;
+const fbDelete = fbRemove;
+
+// ─── FIREBASE ── (end) ───────────────────────────────────────────────────────
 
 // ─── DATA ───────────────────────────────────────────────────────────────────
 
@@ -1082,7 +1091,7 @@ function updateProgress() {
 function setImgPreview(url) {
   const wrap = document.getElementById('mImgPreview');
   const img = document.getElementById('mImgPreviewImg');
-  if (url && url.startsWith('http')) {
+  if (url && (url.startsWith('http') || url.startsWith('data:'))) {
     img.src = url;
     wrap.style.display = 'block';
   } else {
@@ -1175,10 +1184,10 @@ function saveItem() {
       item.qty = qty;
       item.note = document.getElementById('mNote').value.trim();
       item.proxy = proxyOn;
-      item.img = getImgValue();
+      item.img = imgVal;
+      fbPut(item);
+      showToast('✅ 已更新商品');
     }
-    showToast('✅ 已更新商品');
-    fbSave(item);
   } else {
     const newItem = {
       id: 'u' + Date.now(),
